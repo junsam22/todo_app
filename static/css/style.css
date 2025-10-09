@@ -1,0 +1,144 @@
+/* カスタムCSS - Tailwind CSSの補完 */
+
+/* アニメーション */
+.todo-item {
+    transition: all 0.2s ease-in-out;
+}
+
+.todo-item:hover {
+    transform: translateY(-1px);
+}
+
+/* 完了済みタスクのスタイル */
+.todo-item[data-completed="true"] {
+    opacity: 0.7;
+    background-color: #f9fafb;
+}
+
+/* 優先度バッジのアニメーション */
+.priority-badge {
+    transition: all 0.2s ease-in-out;
+}
+
+/* ボタンのホバーエフェクト */
+button {
+    transition: all 0.2s ease-in-out;
+}
+
+/* モーダルのアニメーション */
+#edit-modal {
+    transition: opacity 0.3s ease-in-out;
+}
+
+#edit-modal.show {
+    display: flex !important;
+}
+
+/* ローディング状態 */
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+/* レスポンシブデザインの調整 */
+@media (max-width: 640px) {
+    .container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    
+    .todo-item {
+        padding: 1rem;
+    }
+    
+    .grid-cols-1.md\\:grid-cols-2 {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* カスタムスクロールバー */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* フォーカス状態の改善 */
+input:focus, textarea:focus, select:focus {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* エラーメッセージのスタイル */
+.error-message {
+    color: #ef4444;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+
+/* 成功メッセージのスタイル */
+.success-message {
+    color: #10b981;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+
+/* タスクの完了アニメーション */
+@keyframes checkmark {
+    0% {
+        transform: scale(0);
+    }
+    50% {
+        transform: scale(1.2);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.todo-toggle.checked {
+    animation: checkmark 0.3s ease-in-out;
+}
+
+/* 空の状態のスタイル */
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #6b7280;
+}
+
+.empty-state svg {
+    margin: 0 auto 1rem;
+    color: #d1d5db;
+}
+
+/* フィルターボタンのアクティブ状態 */
+.filter-active {
+    background-color: #3b82f6 !important;
+    color: white !important;
+}
+
+/* タスクの優先度による色分け */
+.priority-high {
+    border-left: 4px solid #ef4444;
+}
+
+.priority-medium {
+    border-left: 4px solid #f59e0b;
+}
+
+.priority-low {
+    border-left: 4px solid #10b981;
+}
+
