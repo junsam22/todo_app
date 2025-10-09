@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const cancelEditBtn = document.getElementById('cancel-edit');
     const todoList = document.getElementById('todo-list');
     const filterButtons = document.querySelectorAll('[id^="filter-"]');
+    const emptyMessage = document.getElementById('empty-message');
     
     let currentFilter = 'all';
     
@@ -206,12 +207,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     break;
             }
         });
+        
+        updateEmptyState();
     }
     
     // タスクをリストに追加
     function addTodoToList(todo) {
         const todoElement = createTodoElement(todo);
         todoList.insertBefore(todoElement, todoList.firstChild);
+        updateEmptyState();
     }
     
     // タスクをリストから更新
@@ -221,6 +225,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const newElement = createTodoElement(todo);
             existingElement.parentNode.replaceChild(newElement, existingElement);
         }
+        updateEmptyState();
     }
     
     // タスクをリストから削除
@@ -228,6 +233,23 @@ document.addEventListener('DOMContentLoaded', function() {
         const element = document.querySelector(`[data-id="${todoId}"]`);
         if (element) {
             element.remove();
+        }
+        updateEmptyState();
+    }
+    
+    // タスクが存在しない場合のメッセージを制御
+    function updateEmptyState() {
+        if (!emptyMessage) {
+            return;
+        }
+        
+        const todoItems = Array.from(document.querySelectorAll('.todo-item'));
+        const hasVisibleTodo = todoItems.some(item => item.style.display !== 'none');
+        
+        if (todoItems.length === 0 || !hasVisibleTodo) {
+            emptyMessage.classList.remove('hidden');
+        } else {
+            emptyMessage.classList.add('hidden');
         }
     }
     
