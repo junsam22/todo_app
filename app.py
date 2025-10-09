@@ -7,7 +7,19 @@ app = Flask(__name__)
 
 # データベース設定
 basedir = os.path.abspath(os.path.dirname(__file__))
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///todo.db'
+# Vercel用の設定: メモリ内データベースを使用（サーバーレス環境対応）
+# Vercel環境の検出（複数の方法で確認）
+is_vercel = (
+    os.environ.get('VERCEL') or 
+    os.environ.get('VERCEL_ENV') or 
+    os.environ.get('NOW_REGION') or
+    'vercel.app' in os.environ.get('VERCEL_URL', '')
+)
+
+if is_vercel:
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
+else:
+    app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(basedir, "todo.db")}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -125,7 +137,34 @@ def reorder_todos():
 # Vercel用のWSGIアプリケーション
 app = app
 
-if __name__ == '__main__':
+# アプリケーション起動時の初期化
+def init_db():
     with app.app_context():
+        # デバッグ用ログ
+        print(f"Environment detection:")
+        print(f"  VERCEL: {os.environ.get('VERCEL')}")
+        print(f"  VERCEL_ENV: {os.environ.get('VERCEL_ENV')}")
+        print(f"  NOW_REGION: {os.environ.get('NOW_REGION')}")
+        print(f"  VERCEL_URL: {os.environ.get('VERCEL_URL')}")
+        print(f"  is_vercel: {is_vercel}")
+        print(f"  Database URI: {app.config['SQLALCHEMY_DATABASE_URI']}")
+        
         db.create_all()
+        # Vercel環境（メモリ内DB）の場合、サンプルデータを追加
+        if is_vercel:
+            # 既存のデータがあるかチェック
+            if Todo.query.count() == 0:
+                sample_todos = [
+                    Todo(title="サンプルタスク1", description="これはサンプルタスクです", priority="high", order=1),
+                    Todo(title="サンプルタスク2", description="ドラッグ&ドロップで順序を変更できます", priority="medium", order=2),
+                    Todo(title="サンプルタスク3", description="編集・削除も可能です", priority="low", order=3)
+                ]
+                for todo in sample_todos:
+                    db.session.add(todo)
+                db.session.commit()
+
+# アプリケーション起動時に初期化
+init_db()
+
+if __name__ == '__main__':
     app.run(debug=True)
