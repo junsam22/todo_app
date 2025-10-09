@@ -105,15 +105,13 @@
             </div>
             {% endfor %}
             
-            {% if not todos %}
-            <div class="text-center py-8 text-gray-500">
+            <div id="empty-message" class="text-center py-8 text-gray-500 {% if todos %}hidden{% endif %}">
                 <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
                 </svg>
-                <p class="text-lg">まだタスクがありません</p>
+                <p class="text-lg">タスクがありません</p>
                 <p class="text-sm">上のフォームから新しいタスクを作成してください</p>
             </div>
-            {% endif %}
         </div>
     </div>
 </div>
