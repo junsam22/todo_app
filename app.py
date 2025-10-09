@@ -65,6 +65,11 @@ def create_todo():
     
     return jsonify(todo.to_dict()), 201
 
+@app.route('/api/todos/<int:todo_id>', methods=['GET'])
+def get_todo(todo_id):
+    todo = Todo.query.get_or_404(todo_id)
+    return jsonify(todo.to_dict())
+
 @app.route('/api/todos/<int:todo_id>', methods=['PUT'])
 def update_todo(todo_id):
     todo = Todo.query.get_or_404(todo_id)
@@ -74,6 +79,7 @@ def update_todo(todo_id):
     todo.description = data.get('description', todo.description)
     todo.completed = data.get('completed', todo.completed)
     todo.priority = data.get('priority', todo.priority)
+    todo.order = data.get('order', todo.order)
     todo.updated_at = datetime.utcnow()
     
     db.session.commit()
