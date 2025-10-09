@@ -80,6 +80,19 @@ todo_app/
 - **高速**: 軽量な構成で高速動作
 - **美しいUI**: Tailwind CSSによるモダンなデザイン
 
+## デプロイ
+
+このアプリケーションはVercelでデプロイされています：
+
+- **Production URL**: https://todo-app-coral-three-47.vercel.app
+- **Deployment URL**: https://todo-6v9fb3sbg-sarunori-projects.vercel.app
+
+### Vercelデプロイの特徴
+- 自動デプロイ（GitHubプッシュ時に自動更新）
+- グローバルCDN配信
+- HTTPS対応
+- サーバーレスアーキテクチャ
+
 ## ライセンス
 
 MIT License
