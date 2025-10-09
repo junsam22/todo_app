@@ -92,6 +92,9 @@ def toggle_todo(todo_id):
     
     return jsonify(todo.to_dict())
 
+# Vercel用のWSGIアプリケーション
+app = app
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
