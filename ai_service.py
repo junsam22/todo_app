@@ -77,7 +77,7 @@ def _generate_with_gemini(title: str, api_key: str) -> Optional[str]:
     signal.alarm(10)
 
     try:
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        model = genai.GenerativeModel('gemini-2.5-flash')
         response = model.generate_content(
             prompt,
             generation_config={
