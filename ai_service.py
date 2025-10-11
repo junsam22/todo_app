@@ -52,7 +52,9 @@ def generate_description(title: str) -> str:
 
 
 def _generate_with_gemini(title: str, api_key: str) -> Optional[str]:
-    """Generate description using Gemini API."""
+    """Generate description using Gemini API with timeout."""
+    import signal
+
     global _configured_api_key
 
     if not GENAI_AVAILABLE:
@@ -67,18 +69,29 @@ def _generate_with_gemini(title: str, api_key: str) -> Optional[str]:
         "説明文のみを出力し、余計な前置きや説明は不要です。"
     )
 
-    model = genai.GenerativeModel('gemini-2.0-flash-exp')
-    response = model.generate_content(
-        prompt,
-        generation_config={
-            'temperature': 0.7,
-            'max_output_tokens': 100,
-        },
-    )
+    def timeout_handler(signum, frame):
+        raise TimeoutError("Gemini API call timed out")
 
-    description = getattr(response, "text", "") or ""
-    description = description.strip()
-    return description or None
+    # Set 10 second timeout
+    signal.signal(signal.SIGALRM, timeout_handler)
+    signal.alarm(10)
+
+    try:
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        response = model.generate_content(
+            prompt,
+            generation_config={
+                'temperature': 0.7,
+                'max_output_tokens': 100,
+            },
+            request_options={'timeout': 10}
+        )
+
+        description = getattr(response, "text", "") or ""
+        description = description.strip()
+        return description or None
+    finally:
+        signal.alarm(0)  # Cancel the alarm
 
 
 def generate_simple_description(title: str) -> str:
