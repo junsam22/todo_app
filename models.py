@@ -99,11 +99,14 @@ class TodoRepository:
     def create_todo(title: str, description: str = '', priority: str = 'medium') -> Optional[Todo]:
         """Create a new todo."""
         try:
+            print(f"[DEBUG] create_todo called with: title={title}, description={description}, priority={priority}")
             supabase = get_supabase_client()
+            print(f"[DEBUG] Got supabase client: {supabase}")
 
             # Get max order
             max_order_response = supabase.table('todos').select('order').order('order', desc=True).limit(1).execute()
             max_order = max_order_response.data[0]['order'] if max_order_response.data else 0
+            print(f"[DEBUG] Max order: {max_order}")
 
             # Create new todo
             todo_data = {
@@ -113,14 +116,19 @@ class TodoRepository:
                 'order': max_order + 1,
                 'completed': False
             }
+            print(f"[DEBUG] Todo data: {todo_data}")
 
             response = supabase.table('todos').insert(todo_data).execute()
+            print(f"[DEBUG] Insert response: {response.data}")
 
             if response.data:
                 return Todo.from_dict(response.data[0])
+            print("[DEBUG] No data in response")
             return None
         except Exception as e:
             print(f"Error creating todo: {e}")
+            import traceback
+            traceback.print_exc()
             return None
 
     @staticmethod
