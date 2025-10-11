@@ -3,3 +3,14 @@ __pycache__/
 *.db
 instance/
 .vercel
+
+# Supabase
+supabase/.temp/
+
+# Development scripts
+create_table_simple.py
+create_tables.sql
+setup_database.py
+
+# Environment variables
+.env
