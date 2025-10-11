@@ -20,7 +20,8 @@ def create_app():
 
     # Initialize database tables and sample data
     with app.app_context():
-        Config.print_config()
+        if app.config['DEBUG']:
+            Config.print_config()
         db.create_all()
         init_sample_data(app)
 
