@@ -61,7 +61,7 @@
                  data-id="{{ todo.id }}" data-completed="{{ todo.completed|lower }}"
                  data-priority="{{ todo.priority }}"
                  data-order="{{ todo.order or loop.index }}"
-                 data-created-at="{{ todo.created_at.isoformat() if todo.created_at else '' }}">
+                 data-created-at="{{ todo.created_at }}">
                 <div class="flex items-start justify-between">
                     <div class="flex items-start space-x-3 flex-1">
                         <button class="todo-toggle mt-1 w-5 h-5 rounded border-2 border-gray-300 flex items-center justify-center 
@@ -95,7 +95,7 @@
                                 </span>
                                 
                                 <span class="text-xs">
-                                    作成: {{ todo.created_at.strftime('%Y/%m/%d') }}
+                                    作成: {{ todo.created_at[:10] if todo.created_at else '' }}
                                 </span>
                             </div>
                         </div>
