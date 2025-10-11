@@ -1,6 +1,12 @@
 """AI service for generating task descriptions."""
 import os
-from google import genai
+
+try:
+    from google import genai
+    GENAI_AVAILABLE = True
+except ImportError:
+    GENAI_AVAILABLE = False
+    print("Warning: google-generativeai package not available. Using fallback description generation.")
 
 
 def generate_description(title: str) -> str:
@@ -17,6 +23,10 @@ def generate_description(title: str) -> str:
         ValueError: If GEMINI_API_KEY is not set
         Exception: If API call fails
     """
+    # Fallback to simple generation if genai package is not available
+    if not GENAI_AVAILABLE:
+        return generate_simple_description(title)
+
     api_key = os.environ.get('GEMINI_API_KEY')
 
     if not api_key:
