@@ -1,97 +1,68 @@
 """AI service for generating task descriptions."""
 import os
+import requests
 from typing import Optional
-
-try:
-    import google.generativeai as genai
-    GENAI_AVAILABLE = True
-except ImportError:  # pragma: no cover - optional dependency
-    GENAI_AVAILABLE = False
-    genai = None  # type: ignore[assignment]
-    print(
-        "Warning: google-generativeai package not available. "
-        "Using fallback description generation."
-    )
-
-_configured_api_key: Optional[str] = None
 
 
 def generate_description(title: str) -> str:
     """
     Generate a task description based on the title using Google Gemini API.
+    Falls back to simple rule-based generation if API is unavailable.
 
     Args:
         title: The task title
 
     Returns:
         Generated description string
-
-    Raises:
-        ValueError: If GEMINI_API_KEY is not set
-        Exception: If API call fails
     """
-    # Fallback to simple generation if genai package is not available
-    if not GENAI_AVAILABLE:
-        return generate_simple_description(title)
-
     api_key = os.environ.get('GEMINI_API_KEY')
 
     if not api_key:
-        # Fallback to simple rule-based generation if API key is not set
         return generate_simple_description(title)
 
     try:
-        description = _generate_with_gemini(title, api_key)
+        description = _call_gemini_api(title, api_key)
         if description:
             return description
-    except Exception as e:  # pragma: no cover - network path
-        print(f"Gemini API error: {type(e).__name__}: {str(e)}")
+    except Exception as e:
+        print(f"Gemini API error: {e}")
 
-    # Fallback to simple generation on error
     return generate_simple_description(title)
 
 
-def _generate_with_gemini(title: str, api_key: str) -> Optional[str]:
-    """Generate description using Gemini API with timeout."""
-    import signal
+def _call_gemini_api(title: str, api_key: str) -> Optional[str]:
+    """Call Gemini API via REST endpoint."""
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key={api_key}"
 
-    global _configured_api_key
+    prompt = f"タイトル「{title}」にちなんだ説明文を40文字程度で返却してください。説明文のみを出力し、余計な前置きや説明は不要です。"
 
-    if not GENAI_AVAILABLE:
+    payload = {
+        "contents": [{
+            "parts": [{"text": prompt}]
+        }],
+        "generationConfig": {
+            "temperature": 0.7,
+            "maxOutputTokens": 100
+        }
+    }
+
+    response = requests.post(url, json=payload, timeout=10)
+
+    if response.status_code != 200:
+        print(f"Gemini API returned status {response.status_code}: {response.text[:200]}")
         return None
 
-    if _configured_api_key != api_key:
-        genai.configure(api_key=api_key)
-        _configured_api_key = api_key
+    data = response.json()
 
-    prompt = (
-        f"タイトル「{title}」にちなんだ説明文を40文字程度で返却してください。\n"
-        "説明文のみを出力し、余計な前置きや説明は不要です。"
-    )
-
-    def timeout_handler(signum, frame):
-        raise TimeoutError("Gemini API call timed out")
-
-    # Set 10 second timeout
-    signal.signal(signal.SIGALRM, timeout_handler)
-    signal.alarm(10)
-
+    # Extract text from response
+    # Response structure: data['candidates'][0]['content']['parts'][0]['text']
     try:
-        model = genai.GenerativeModel('gemini-2.5-flash')
-        response = model.generate_content(
-            prompt,
-            generation_config={
-                'temperature': 0.7,
-                'max_output_tokens': 100,
-            },
-            request_options={'timeout': 10}
-        )
-
-        description = getattr(response, "text", "") or ""
-        description = description.strip()
-        return description or None
-    finally:
-        signal.alarm(0)  # Cancel the alarm
+        text = data['candidates'][0]['content']['parts'][0]['text']
+        return text.strip() or None
+    except (KeyError, IndexError, TypeError) as e:
+        print(f"Failed to parse Gemini response: {e}")
+        print(f"Response data: {data}")
+        return None
 
 
 def generate_simple_description(title: str) -> str:
@@ -105,10 +76,8 @@ def generate_simple_description(title: str) -> str:
     Returns:
         Generated description string
     """
-    # Analyze title to generate contextual description
     title_lower = title.lower()
 
-    # Action-based generation
     if any(word in title_lower for word in ['作成', '書く', '書き', '執筆']):
         return f"{title}を完了する"
     elif any(word in title_lower for word in ['確認', 'チェック', '検証', 'テスト']):
@@ -122,5 +91,4 @@ def generate_simple_description(title: str) -> str:
     elif any(word in title_lower for word in ['調査', '調べる', '研究', 'リサーチ']):
         return f"{title}を行う"
 
-    # Default simple description
     return f"{title}を実施"
