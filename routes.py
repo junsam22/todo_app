@@ -18,7 +18,15 @@ def register_routes(app):
             (Todo.priority == 'low', 1),
             else_=0
         )
-        todos = Todo.query.order_by(priority_order.desc(), Todo.created_at.desc()).all()
+        todos = (
+            Todo.query
+            .order_by(
+                priority_order.desc(),
+                Todo.order.asc(),
+                Todo.created_at.desc(),
+            )
+            .all()
+        )
         return render_template('index.html', todos=todos)
 
     @app.route('/api/todos', methods=['GET'])
@@ -31,7 +39,15 @@ def register_routes(app):
             (Todo.priority == 'low', 1),
             else_=0
         )
-        todos = Todo.query.order_by(priority_order.desc(), Todo.created_at.desc()).all()
+        todos = (
+            Todo.query
+            .order_by(
+                priority_order.desc(),
+                Todo.order.asc(),
+                Todo.created_at.desc(),
+            )
+            .all()
+        )
         return jsonify([todo.to_dict() for todo in todos])
 
     @app.route('/api/todos', methods=['POST'])

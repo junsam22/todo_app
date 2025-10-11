@@ -58,7 +58,10 @@
         <div id="todo-list" class="space-y-3 sortable-container">
             {% for todo in todos %}
             <div class="todo-item border border-gray-200 rounded-lg p-4 hover:shadow-md transition duration-200 cursor-move"
-                 data-id="{{ todo.id }}" data-completed="{{ todo.completed|lower }}" data-priority="{{ todo.priority }}" data-order="{{ loop.index }}">
+                 data-id="{{ todo.id }}" data-completed="{{ todo.completed|lower }}"
+                 data-priority="{{ todo.priority }}"
+                 data-order="{{ todo.order or loop.index }}"
+                 data-created-at="{{ todo.created_at.isoformat() if todo.created_at else '' }}">
                 <div class="flex items-start justify-between">
                     <div class="flex items-start space-x-3 flex-1">
                         <button class="todo-toggle mt-1 w-5 h-5 rounded border-2 border-gray-300 flex items-center justify-center 

@@ -273,29 +273,34 @@ document.addEventListener('DOMContentLoaded', function() {
         updateEmptyState();
     }
     
-    // タスクをリストに追加（優先度順）
+    // タスクをリストに追加（優先度 → order → 作成日時の順で整列）
     function addTodoToList(todo) {
         const todoElement = createTodoElement(todo);
 
-        // 優先度のマッピング（高 > 中 > 低）
-        const priorityValue = {
-            'high': 3,
-            'medium': 2,
-            'low': 1
-        };
-
-        const newPriority = priorityValue[todo.priority] || 0;
-        const newCreatedAt = new Date(todo.created_at);
+        const newPriority = getPriorityValue(todo.priority);
+        const newOrder = getOrderValue(todo.order);
+        const newCreatedAt = getDateValue(todo.created_at);
 
         // 既存のタスクを取得して適切な位置を探す
         const existingTodos = Array.from(todoList.querySelectorAll('.todo-item'));
         let insertPosition = null;
 
         for (const existingTodo of existingTodos) {
-            const existingPriority = priorityValue[existingTodo.dataset.priority] || 0;
+            const existingPriority = getPriorityValue(existingTodo.dataset.priority);
+            const existingOrder = getOrderValue(existingTodo.dataset.order);
+            const existingCreatedAt = getDateValue(existingTodo.dataset.createdAt);
 
-            // 優先度が低い、または優先度が同じで作成日時が古いタスクを見つけたらその前に挿入
-            if (newPriority > existingPriority) {
+            const isHigherPriority = newPriority > existingPriority;
+            const isSamePriority = newPriority === existingPriority;
+            const isBeforeInOrder = newOrder < existingOrder;
+            const hasSameOrder = newOrder === existingOrder;
+            const isNewer = newCreatedAt > existingCreatedAt;
+
+            if (
+                isHigherPriority ||
+                (isSamePriority && isBeforeInOrder) ||
+                (isSamePriority && hasSameOrder && isNewer)
+            ) {
                 insertPosition = existingTodo;
                 break;
             }
@@ -313,6 +318,16 @@ document.addEventListener('DOMContentLoaded', function() {
     // タスクをリストから更新（優先度変更時は再配置）
     function updateTodoInList(todo) {
         const existingElement = document.querySelector(`[data-id="${todo.id}"]`);
+
+        if (existingElement) {
+            if (typeof todo.order === 'undefined') {
+                todo.order = getOrderValue(existingElement.dataset.order);
+            }
+            if (!todo.created_at) {
+                todo.created_at = existingElement.dataset.createdAt;
+            }
+        }
+
         if (existingElement) {
             existingElement.remove();
         }
@@ -344,7 +359,35 @@ document.addEventListener('DOMContentLoaded', function() {
             emptyMessage.classList.add('hidden');
         }
     }
-    
+
+    // Helper: Convert priority string to sortable numeric value
+    function getPriorityValue(priority) {
+        const map = {
+            'high': 3,
+            'medium': 2,
+            'low': 1
+        };
+        return map[priority] || 0;
+    }
+
+    // Helper: Normalize order value for comparisons
+    function getOrderValue(order) {
+        const parsed = Number(order);
+        return Number.isFinite(parsed) ? parsed : Number.MAX_SAFE_INTEGER;
+    }
+
+    // Helper: Normalize date value for comparisons
+    function getDateValue(value) {
+        if (!value) {
+            return new Date(0);
+        }
+        if (value instanceof Date) {
+            return value;
+        }
+        const parsed = new Date(value);
+        return Number.isNaN(parsed.getTime()) ? new Date(0) : parsed;
+    }
+
     // Helper: Get priority label in Japanese
     function getPriorityLabel(priority) {
         const labels = {
@@ -381,9 +424,12 @@ document.addEventListener('DOMContentLoaded', function() {
         div.dataset.id = todo.id;
         div.dataset.completed = todo.completed;
         div.dataset.priority = todo.priority;
-        div.dataset.order = todo.order || 0;
+        const orderValue = getOrderValue(todo.order);
+        div.dataset.order = orderValue;
 
-        const createdDate = new Date(todo.created_at);
+        const createdDateValue = getDateValue(todo.created_at);
+        div.dataset.createdAt = createdDateValue.toISOString();
+        const displayDate = Number.isNaN(createdDateValue.getTime()) ? new Date() : createdDateValue;
         const completedClass = todo.completed ? 'line-through text-gray-500' : '';
 
         div.innerHTML = `
@@ -411,7 +457,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             </span>
 
                             <span class="text-xs">
-                                作成: ${createdDate.toLocaleDateString('ja-JP')}
+                                作成: ${displayDate.toLocaleDateString('ja-JP')}
                             </span>
                         </div>
                     </div>
@@ -486,10 +532,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // タスクの順序を更新
     async function updateTodoOrder() {
         const todoItems = document.querySelectorAll('.todo-item');
-        const todoOrders = Array.from(todoItems).map((item, index) => ({
-            id: parseInt(item.dataset.id),
-            order: index + 1
-        }));
+        const todoOrders = Array.from(todoItems).map((item, index) => {
+            const newOrder = index + 1;
+            item.dataset.order = newOrder;
+            return {
+                id: parseInt(item.dataset.id, 10),
+                order: newOrder
+            };
+        });
 
         try {
             const response = await fetch('/api/todos/reorder', {

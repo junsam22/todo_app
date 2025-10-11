@@ -1,12 +1,19 @@
 """AI service for generating task descriptions."""
 import os
+from typing import Optional
 
 try:
-    from google import genai
+    import google.generativeai as genai
     GENAI_AVAILABLE = True
-except ImportError:
+except ImportError:  # pragma: no cover - optional dependency
     GENAI_AVAILABLE = False
-    print("Warning: google-generativeai package not available. Using fallback description generation.")
+    genai = None  # type: ignore[assignment]
+    print(
+        "Warning: google-generativeai package not available. "
+        "Using fallback description generation."
+    )
+
+_configured_api_key: Optional[str] = None
 
 
 def generate_description(title: str) -> str:
@@ -34,27 +41,44 @@ def generate_description(title: str) -> str:
         return generate_simple_description(title)
 
     try:
-        client = genai.Client(api_key=api_key)
-
-        prompt = f"""タイトル「{title}」にちなんだ説明文を40文字程度で返却してください。
-説明文のみを出力し、余計な前置きや説明は不要です。"""
-
-        response = client.models.generate_content(
-            model='gemini-2.0-flash-exp',
-            contents=prompt,
-            config={
-                'temperature': 0.7,
-                'max_output_tokens': 100,
-            }
-        )
-
-        description = response.text.strip()
-        return description
-
-    except Exception as e:
+        description = _generate_with_gemini(title, api_key)
+        if description:
+            return description
+    except Exception as e:  # pragma: no cover - network path
         print(f"Gemini API error: {type(e).__name__}: {str(e)}")
-        # Fallback to simple generation on error
-        return generate_simple_description(title)
+
+    # Fallback to simple generation on error
+    return generate_simple_description(title)
+
+
+def _generate_with_gemini(title: str, api_key: str) -> Optional[str]:
+    """Generate description using Gemini API."""
+    global _configured_api_key
+
+    if not GENAI_AVAILABLE:
+        return None
+
+    if _configured_api_key != api_key:
+        genai.configure(api_key=api_key)
+        _configured_api_key = api_key
+
+    prompt = (
+        f"タイトル「{title}」にちなんだ説明文を40文字程度で返却してください。\n"
+        "説明文のみを出力し、余計な前置きや説明は不要です。"
+    )
+
+    model = genai.GenerativeModel('gemini-2.0-flash-exp')
+    response = model.generate_content(
+        prompt,
+        generation_config={
+            'temperature': 0.7,
+            'max_output_tokens': 100,
+        },
+    )
+
+    description = getattr(response, "text", "") or ""
+    description = description.strip()
+    return description or None
 
 
 def generate_simple_description(title: str) -> str:
