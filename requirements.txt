@@ -3,4 +3,6 @@ SQLAlchemy==2.0.21
 Flask-SQLAlchemy==3.0.5
 python-dateutil==2.8.2
 google-generativeai>=0.3.0
+supabase>=2.0.0
+python-dotenv>=1.0.0
 

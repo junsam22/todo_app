@@ -1,7 +1,6 @@
 """API routes for the Todo application."""
 from flask import render_template, request, jsonify
-from datetime import datetime
-from models import db, Todo
+from models import TodoRepository
 from ai_service import generate_description
 
 
@@ -11,43 +10,13 @@ def register_routes(app):
     @app.route('/')
     def index():
         """Render the main page."""
-        # Define priority order mapping: high=3, medium=2, low=1
-        priority_order = db.case(
-            (Todo.priority == 'high', 3),
-            (Todo.priority == 'medium', 2),
-            (Todo.priority == 'low', 1),
-            else_=0
-        )
-        todos = (
-            Todo.query
-            .order_by(
-                priority_order.desc(),
-                Todo.order.asc(),
-                Todo.created_at.desc(),
-            )
-            .all()
-        )
+        todos = TodoRepository.get_all_todos_ordered()
         return render_template('index.html', todos=todos)
 
     @app.route('/api/todos', methods=['GET'])
     def get_todos():
         """Get all todos."""
-        # Define priority order mapping: high=3, medium=2, low=1
-        priority_order = db.case(
-            (Todo.priority == 'high', 3),
-            (Todo.priority == 'medium', 2),
-            (Todo.priority == 'low', 1),
-            else_=0
-        )
-        todos = (
-            Todo.query
-            .order_by(
-                priority_order.desc(),
-                Todo.order.asc(),
-                Todo.created_at.desc(),
-            )
-            .all()
-        )
+        todos = TodoRepository.get_all_todos_ordered()
         return jsonify([todo.to_dict() for todo in todos])
 
     @app.route('/api/todos', methods=['POST'])
@@ -59,85 +28,79 @@ def register_routes(app):
             if not data or 'title' not in data:
                 return jsonify({'error': 'Title is required'}), 400
 
-            # Set order for new task (append to end)
-            max_order = db.session.query(db.func.max(Todo.order)).scalar() or 0
-
-            todo = Todo(
+            todo = TodoRepository.create_todo(
                 title=data['title'],
                 description=data.get('description', ''),
-                priority=data.get('priority', 'medium'),
-                order=max_order + 1
+                priority=data.get('priority', 'medium')
             )
 
-            db.session.add(todo)
-            db.session.commit()
-
-            return jsonify(todo.to_dict()), 201
+            if todo:
+                return jsonify(todo.to_dict()), 201
+            else:
+                return jsonify({'error': 'Failed to create todo'}), 500
 
         except Exception as e:
-            db.session.rollback()
             return jsonify({'error': str(e)}), 500
 
     @app.route('/api/todos/<int:todo_id>', methods=['GET'])
     def get_todo(todo_id):
         """Get a specific todo by ID."""
-        todo = Todo.query.get_or_404(todo_id)
-        return jsonify(todo.to_dict())
+        todo = TodoRepository.get_todo_by_id(todo_id)
+        if todo:
+            return jsonify(todo.to_dict())
+        return jsonify({'error': 'Todo not found'}), 404
 
     @app.route('/api/todos/<int:todo_id>', methods=['PUT'])
     def update_todo(todo_id):
         """Update an existing todo."""
         try:
-            todo = Todo.query.get_or_404(todo_id)
             data = request.get_json()
 
             if not data:
                 return jsonify({'error': 'No data provided'}), 400
 
             # Update fields if provided
-            todo.title = data.get('title', todo.title)
-            todo.description = data.get('description', todo.description)
-            todo.completed = data.get('completed', todo.completed)
-            todo.priority = data.get('priority', todo.priority)
-            todo.order = data.get('order', todo.order)
-            todo.updated_at = datetime.utcnow()
+            todo = TodoRepository.update_todo(
+                todo_id,
+                title=data.get('title'),
+                description=data.get('description'),
+                completed=data.get('completed'),
+                priority=data.get('priority'),
+                order=data.get('order')
+            )
 
-            db.session.commit()
-
-            return jsonify(todo.to_dict())
+            if todo:
+                return jsonify(todo.to_dict())
+            else:
+                return jsonify({'error': 'Todo not found or update failed'}), 404
 
         except Exception as e:
-            db.session.rollback()
             return jsonify({'error': str(e)}), 500
 
     @app.route('/api/todos/<int:todo_id>', methods=['DELETE'])
     def delete_todo(todo_id):
         """Delete a todo."""
         try:
-            todo = Todo.query.get_or_404(todo_id)
-            db.session.delete(todo)
-            db.session.commit()
-
-            return '', 204
+            success = TodoRepository.delete_todo(todo_id)
+            if success:
+                return '', 204
+            else:
+                return jsonify({'error': 'Failed to delete todo'}), 500
 
         except Exception as e:
-            db.session.rollback()
             return jsonify({'error': str(e)}), 500
 
     @app.route('/api/todos/<int:todo_id>/toggle', methods=['PATCH'])
     def toggle_todo(todo_id):
         """Toggle todo completion status."""
         try:
-            todo = Todo.query.get_or_404(todo_id)
-            todo.completed = not todo.completed
-            todo.updated_at = datetime.utcnow()
-
-            db.session.commit()
-
-            return jsonify(todo.to_dict())
+            todo = TodoRepository.toggle_todo_completion(todo_id)
+            if todo:
+                return jsonify(todo.to_dict())
+            else:
+                return jsonify({'error': 'Todo not found'}), 404
 
         except Exception as e:
-            db.session.rollback()
             return jsonify({'error': str(e)}), 500
 
     @app.route('/api/todos/reorder', methods=['POST'])
@@ -150,21 +113,14 @@ def register_routes(app):
                 return jsonify({'error': 'todo_orders is required'}), 400
 
             todo_orders = data.get('todo_orders', [])
+            success = TodoRepository.reorder_todos(todo_orders)
 
-            for item in todo_orders:
-                if 'id' not in item or 'order' not in item:
-                    continue
-
-                todo = Todo.query.get(item['id'])
-                if todo:
-                    todo.order = item['order']
-                    todo.updated_at = datetime.utcnow()
-
-            db.session.commit()
-            return jsonify({'success': True}), 200
+            if success:
+                return jsonify({'success': True}), 200
+            else:
+                return jsonify({'error': 'Failed to reorder todos'}), 500
 
         except Exception as e:
-            db.session.rollback()
             return jsonify({'error': str(e)}), 500
 
     @app.route('/api/generate-description', methods=['POST'])
