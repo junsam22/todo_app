@@ -37,10 +37,11 @@ def register_routes(app):
             if todo:
                 return jsonify(todo.to_dict()), 201
             else:
-                return jsonify({'error': 'Failed to create todo'}), 500
+                return jsonify({'error': 'Failed to create todo', 'details': 'TodoRepository.create_todo returned None'}), 500
 
         except Exception as e:
-            return jsonify({'error': str(e)}), 500
+            import traceback
+            return jsonify({'error': str(e), 'traceback': traceback.format_exc()}), 500
 
     @app.route('/api/todos/<int:todo_id>', methods=['GET'])
     def get_todo(todo_id):
