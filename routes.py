@@ -1,4 +1,5 @@
 """API routes for the Todo application."""
+import os
 from flask import render_template, request, jsonify
 from models import TodoRepository
 from ai_service import generate_description
@@ -12,6 +13,17 @@ def register_routes(app):
         """Render the main page."""
         todos = TodoRepository.get_all_todos_ordered()
         return render_template('index.html', todos=todos)
+
+    @app.route('/api/debug/env', methods=['GET'])
+    def debug_env():
+        """Debug endpoint to check environment variables."""
+        return jsonify({
+            'SUPABASE_URL_SET': bool(os.environ.get('SUPABASE_URL')),
+            'SUPABASE_KEY_SET': bool(os.environ.get('SUPABASE_KEY')),
+            'SUPABASE_URL_PREFIX': os.environ.get('SUPABASE_URL', '')[:30] if os.environ.get('SUPABASE_URL') else 'NOT_SET',
+            'VERCEL': os.environ.get('VERCEL'),
+            'VERCEL_ENV': os.environ.get('VERCEL_ENV'),
+        })
 
     @app.route('/api/todos', methods=['GET'])
     def get_todos():
