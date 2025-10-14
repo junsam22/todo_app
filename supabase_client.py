@@ -21,9 +21,18 @@ def get_supabase_client() -> Client:
     global _client_cache
 
     if _client_cache is None:
-        print(f"[DEBUG] Creating new Supabase client with URL: {SUPABASE_URL[:40]}...")
-        print(f"[DEBUG] Using API key: {SUPABASE_KEY[:20]}...")
-        _client_cache = create_client(SUPABASE_URL, SUPABASE_KEY)
-        print(f"[DEBUG] Supabase client created successfully")
+        print(f"[DEBUG] Creating new Supabase client with URL: {SUPABASE_URL[:40] if SUPABASE_URL else 'None'}...")
+        print(f"[DEBUG] Using API key: {SUPABASE_KEY[:20] if SUPABASE_KEY else 'None'}...")
+
+        if not SUPABASE_URL or not SUPABASE_KEY:
+            print(f"[ERROR] Missing Supabase credentials! URL: {bool(SUPABASE_URL)}, KEY: {bool(SUPABASE_KEY)}")
+            raise ValueError("SUPABASE_URL and SUPABASE_KEY must be set")
+
+        try:
+            _client_cache = create_client(SUPABASE_URL, SUPABASE_KEY)
+            print(f"[DEBUG] Supabase client created successfully")
+        except Exception as e:
+            print(f"[ERROR] Failed to create Supabase client: {type(e).__name__}: {e}")
+            raise
 
     return _client_cache

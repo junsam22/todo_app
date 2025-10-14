@@ -104,9 +104,13 @@ class TodoRepository:
             print(f"[DEBUG] Got supabase client: {supabase}")
 
             # Get max order
-            max_order_response = supabase.table('todos').select('order').order('order', desc=True).limit(1).execute()
-            max_order = max_order_response.data[0]['order'] if max_order_response.data else 0
-            print(f"[DEBUG] Max order: {max_order}")
+            try:
+                max_order_response = supabase.table('todos').select('order').order('order', desc=True).limit(1).execute()
+                max_order = max_order_response.data[0]['order'] if max_order_response.data else 0
+                print(f"[DEBUG] Max order: {max_order}")
+            except Exception as order_error:
+                print(f"[DEBUG] Error getting max order (using 0): {order_error}")
+                max_order = 0
 
             # Create new todo
             todo_data = {
@@ -119,16 +123,18 @@ class TodoRepository:
             print(f"[DEBUG] Todo data: {todo_data}")
 
             response = supabase.table('todos').insert(todo_data).execute()
-            print(f"[DEBUG] Insert response: {response.data}")
+            print(f"[DEBUG] Insert response data: {response.data}")
+            print(f"[DEBUG] Insert response status: {hasattr(response, 'status_code') and response.status_code}")
 
             if response.data:
+                print(f"[DEBUG] Creating Todo object from: {response.data[0]}")
                 return Todo.from_dict(response.data[0])
-            print("[DEBUG] No data in response")
+            print(f"[DEBUG] No data in response. Full response: {response}")
             return None
         except Exception as e:
-            print(f"Error creating todo: {e}")
+            print(f"[ERROR] Error creating todo: {type(e).__name__}: {e}")
             import traceback
-            traceback.print_exc()
+            print(f"[ERROR] Traceback:\n{traceback.format_exc()}")
             return None
 
     @staticmethod
