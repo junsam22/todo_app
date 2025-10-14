@@ -16,7 +16,11 @@ def register_routes(app):
 
     @app.route('/api/debug/env', methods=['GET'])
     def debug_env():
-        """Debug endpoint to check environment variables."""
+        """Debug endpoint to check environment variables (disabled in production)."""
+        # Disable in production for security
+        if os.environ.get('VERCEL_ENV') == 'production':
+            return jsonify({'error': 'Not available in production'}), 403
+
         return jsonify({
             'SUPABASE_URL_SET': bool(os.environ.get('SUPABASE_URL')),
             'SUPABASE_KEY_SET': bool(os.environ.get('SUPABASE_KEY')),
@@ -37,15 +41,20 @@ def register_routes(app):
         import sys
         import io
 
-        # Capture all print statements
-        old_stdout = sys.stdout
-        sys.stdout = captured_output = io.StringIO()
+        # Check if we're in debug mode (non-production environment)
+        is_debug_mode = os.environ.get('VERCEL_ENV') != 'production'
+
+        # Capture stdout only in debug mode to avoid performance overhead
+        if is_debug_mode:
+            old_stdout = sys.stdout
+            sys.stdout = captured_output = io.StringIO()
 
         try:
             data = request.get_json()
 
             if not data or 'title' not in data:
-                sys.stdout = old_stdout
+                if is_debug_mode:
+                    sys.stdout = old_stdout
                 return jsonify({'error': 'Title is required'}), 400
 
             todo = TodoRepository.create_todo(
@@ -54,28 +63,38 @@ def register_routes(app):
                 priority=data.get('priority', 'medium')
             )
 
-            # Get captured output
-            sys.stdout = old_stdout
-            debug_output = captured_output.getvalue()
+            # Get captured output if in debug mode
+            if is_debug_mode:
+                sys.stdout = old_stdout
+                debug_output = captured_output.getvalue()
 
             if todo:
                 return jsonify(todo.to_dict()), 201
             else:
-                return jsonify({
+                error_response = {
                     'error': 'Failed to create todo',
-                    'details': 'TodoRepository.create_todo returned None',
-                    'debug_output': debug_output
-                }), 500
+                    'details': 'TodoRepository.create_todo returned None'
+                }
+                # Only include debug output in non-production environments
+                if is_debug_mode:
+                    error_response['debug_output'] = debug_output
+                return jsonify(error_response), 500
 
         except Exception as e:
-            sys.stdout = old_stdout
-            debug_output = captured_output.getvalue()
+            if is_debug_mode:
+                sys.stdout = old_stdout
+                debug_output = captured_output.getvalue()
+
             import traceback
-            return jsonify({
-                'error': str(e),
-                'traceback': traceback.format_exc(),
-                'debug_output': debug_output
-            }), 500
+            error_response = {
+                'error': str(e)
+            }
+            # Only include traceback and debug output in non-production environments
+            if is_debug_mode:
+                error_response['traceback'] = traceback.format_exc()
+                error_response['debug_output'] = debug_output
+
+            return jsonify(error_response), 500
 
     @app.route('/api/todos/<int:todo_id>', methods=['GET'])
     def get_todo(todo_id):
