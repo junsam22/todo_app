@@ -34,10 +34,18 @@ def register_routes(app):
     @app.route('/api/todos', methods=['POST'])
     def create_todo():
         """Create a new todo."""
+        import sys
+        import io
+
+        # Capture all print statements
+        old_stdout = sys.stdout
+        sys.stdout = captured_output = io.StringIO()
+
         try:
             data = request.get_json()
 
             if not data or 'title' not in data:
+                sys.stdout = old_stdout
                 return jsonify({'error': 'Title is required'}), 400
 
             todo = TodoRepository.create_todo(
@@ -46,14 +54,28 @@ def register_routes(app):
                 priority=data.get('priority', 'medium')
             )
 
+            # Get captured output
+            sys.stdout = old_stdout
+            debug_output = captured_output.getvalue()
+
             if todo:
                 return jsonify(todo.to_dict()), 201
             else:
-                return jsonify({'error': 'Failed to create todo', 'details': 'TodoRepository.create_todo returned None'}), 500
+                return jsonify({
+                    'error': 'Failed to create todo',
+                    'details': 'TodoRepository.create_todo returned None',
+                    'debug_output': debug_output
+                }), 500
 
         except Exception as e:
+            sys.stdout = old_stdout
+            debug_output = captured_output.getvalue()
             import traceback
-            return jsonify({'error': str(e), 'traceback': traceback.format_exc()}), 500
+            return jsonify({
+                'error': str(e),
+                'traceback': traceback.format_exc(),
+                'debug_output': debug_output
+            }), 500
 
     @app.route('/api/todos/<int:todo_id>', methods=['GET'])
     def get_todo(todo_id):
