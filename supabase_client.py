@@ -10,8 +10,9 @@ except ImportError:
     pass  # python-dotenv not installed in production, which is fine
 
 # Supabase configuration
-SUPABASE_URL = os.environ.get('SUPABASE_URL', 'https://virsdnelwxmoklxcogsd.supabase.co')
-SUPABASE_KEY = os.environ.get('SUPABASE_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZpcnNkbmVsd3htb2tseGNvZ3NkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk5OTc2OTYsImV4cCI6MjA3NTU3MzY5Nn0.ypa1txNxO--ghdTeAdrztxi4uMcT8YolOMjTQKVjFvE')
+# strip() to remove any trailing newlines or whitespace from environment variables
+SUPABASE_URL = os.environ.get('SUPABASE_URL', 'https://virsdnelwxmoklxcogsd.supabase.co').strip()
+SUPABASE_KEY = os.environ.get('SUPABASE_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZpcnNkbmVsd3htb2tseGNvZ3NkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk5OTc2OTYsImV4cCI6MjA3NTU3MzY5Nn0.ypa1txNxO--ghdTeAdrztxi4uMcT8YolOMjTQKVjFvE').strip()
 
 # Cache for client instance
 _client_cache = None
