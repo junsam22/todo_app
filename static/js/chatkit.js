@@ -117,17 +117,35 @@ class ChatKitManager {
             // ローディング表示を残したままChatKit要素を作成
             this.chatkitElement = document.createElement('openai-chatkit');
 
-            // スタイル設定
+            // スタイル設定（より明示的に）
             Object.assign(this.chatkitElement.style, {
                 width: '100%',
                 height: '100%',
-                display: 'block'
+                display: 'block',
+                position: 'absolute',
+                top: '0',
+                left: '0',
+                right: '0',
+                bottom: '0',
+                zIndex: '1',
+                visibility: 'visible',
+                opacity: '1'
             });
 
             console.log('📍 Appending ChatKit element to DOM...');
 
             // DOMに追加
             this.elements.container.appendChild(this.chatkitElement);
+
+            console.log('🔍 ChatKit element appended, checking visibility...');
+            setTimeout(() => {
+                console.log('Element dimensions:', {
+                    width: this.chatkitElement.offsetWidth,
+                    height: this.chatkitElement.offsetHeight,
+                    display: window.getComputedStyle(this.chatkitElement).display,
+                    visibility: window.getComputedStyle(this.chatkitElement).visibility
+                });
+            }, 100);
 
             console.log('⚙️ Configuring ChatKit with setOptions...');
 
