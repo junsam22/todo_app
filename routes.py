@@ -205,4 +205,55 @@ def register_routes(app):
                 'success': False
             }), 500
 
+    @app.route('/api/chatkit/create-session', methods=['POST'])
+    def create_chatkit_session():
+        """Create a ChatKit session for AI assistant."""
+        try:
+            import os
+            import requests
+
+            # ChatKit設定（環境変数から読み込む）
+            workflow_id = os.environ.get('CHATKIT_WORKFLOW_ID') or os.environ.get('NEXT_PUBLIC_CHATKIT_WORKFLOW_ID')
+            api_key = os.environ.get('OPENAI_API_KEY')
+
+            if not api_key:
+                return jsonify({'error': 'OpenAI API key not configured'}), 500
+
+            if not workflow_id:
+                return jsonify({'error': 'ChatKit workflow ID not configured'}), 500
+            
+            # OpenAI ChatKit APIを呼び出し
+            url = "https://api.openai.com/v1/chatkit/sessions"
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {api_key}",
+                "OpenAI-Beta": "chatkit_beta=v1"
+            }
+            
+            data = request.get_json() or {}
+            # ユニークなデバイスIDを生成（セッション管理用）
+            import time
+            device_id = data.get('device_id', f'todo_user_{int(time.time())}')
+
+            # ドキュメント通りのペイロード構造
+            payload = {
+                "workflow": {"id": workflow_id},
+                "user": device_id
+            }
+
+            response = requests.post(url, json=payload, headers=headers, timeout=30)
+            
+            if response.status_code == 200:
+                return jsonify(response.json()), 200
+            else:
+                return jsonify({
+                    'error': f'Failed to create session: {response.status_code}',
+                    'details': response.text
+                }), response.status_code
+                
+        except Exception as e:
+            return jsonify({
+                'error': f'Unexpected error: {str(e)}'
+            }), 500
+
     return app
