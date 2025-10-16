@@ -165,10 +165,12 @@ class ChatKitManager {
 
                             console.log('✅ Got client_secret successfully');
 
-                            // ローディングを非表示
-                            if (this.elements.loading) {
-                                this.elements.loading.style.display = 'none';
-                            }
+                            // ローディングを非表示（少し遅延させる）
+                            setTimeout(() => {
+                                if (this.elements.loading) {
+                                    this.elements.loading.style.display = 'none';
+                                }
+                            }, 500);
 
                             return data.client_secret;
 
