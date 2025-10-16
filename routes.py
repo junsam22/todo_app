@@ -216,6 +216,10 @@ def register_routes(app):
             workflow_id = os.environ.get('CHATKIT_WORKFLOW_ID') or os.environ.get('NEXT_PUBLIC_CHATKIT_WORKFLOW_ID')
             api_key = os.environ.get('OPENAI_API_KEY')
 
+            # デバッグログ（本番環境でも一時的に有効）
+            print(f"[ChatKit Session] API Key present: {bool(api_key)}")
+            print(f"[ChatKit Session] Workflow ID present: {bool(workflow_id)}")
+
             if not api_key:
                 return jsonify({'error': 'OpenAI API key not configured'}), 500
 
@@ -242,18 +246,27 @@ def register_routes(app):
             }
 
             response = requests.post(url, json=payload, headers=headers, timeout=30)
-            
+
+            print(f"[ChatKit Session] Response status: {response.status_code}")
+
             if response.status_code == 200:
                 return jsonify(response.json()), 200
             else:
-                return jsonify({
+                error_details = {
                     'error': f'Failed to create session: {response.status_code}',
                     'details': response.text
-                }), response.status_code
-                
+                }
+                print(f"[ChatKit Session] Error: {error_details}")
+                return jsonify(error_details), response.status_code
+
         except Exception as e:
+            import traceback
+            error_msg = f'Unexpected error: {str(e)}'
+            print(f"[ChatKit Session] Exception: {error_msg}")
+            print(f"[ChatKit Session] Traceback: {traceback.format_exc()}")
             return jsonify({
-                'error': f'Unexpected error: {str(e)}'
+                'error': error_msg,
+                'traceback': traceback.format_exc()
             }), 500
 
     return app
