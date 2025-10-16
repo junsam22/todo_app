@@ -146,11 +146,22 @@ class ChatKitManager {
 
             console.log('📦 ChatKit loaded, creating element...');
 
+            // DOMに追加する前にローディングを非表示
+            if (this.elements.loading) {
+                this.elements.loading.style.display = 'none';
+            }
+
             // ChatKit要素を作成
             this.chatkitElement = document.createElement('openai-chatkit');
             this.chatkitElement.style.width = '100%';
             this.chatkitElement.style.height = '100%';
             this.chatkitElement.style.display = 'block';
+
+            console.log('📍 Appending to container...');
+            this.elements.container.appendChild(this.chatkitElement);
+
+            // DOMに追加した後にsetOptionsを呼ぶ
+            console.log('⚙️ Setting options after appending...');
 
             // エラーハンドラーを追加
             this.chatkitElement.addEventListener('error', (e) => {
@@ -158,7 +169,8 @@ class ChatKitManager {
                 this.showError('ChatKit encountered an error');
             });
 
-            console.log('⚙️ Setting options...');
+            // 少し待ってからsetOptionsを呼ぶ
+            await new Promise(resolve => setTimeout(resolve, 100));
 
             // ChatKitの設定
             this.chatkitElement.setOptions({
@@ -167,14 +179,6 @@ class ChatKitManager {
                 }
             });
 
-            console.log('📍 Appending to container...');
-
-            // DOMに追加する前にローディングを非表示
-            if (this.elements.loading) {
-                this.elements.loading.style.display = 'none';
-            }
-
-            this.elements.container.appendChild(this.chatkitElement);
             this.initialized = true;
 
             console.log('✅ ChatKit initialized successfully');
