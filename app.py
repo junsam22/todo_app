@@ -1,6 +1,11 @@
 """Main Flask application for Todo App with Supabase."""
+import os
 from flask import Flask
 from routes import register_routes
+from dotenv import load_dotenv
+
+# .envファイルから環境変数を読み込む
+load_dotenv()
 
 
 def create_app():
